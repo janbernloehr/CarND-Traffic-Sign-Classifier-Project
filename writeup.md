@@ -28,7 +28,7 @@ I used plain to calculate summary statistics of the traffic
 signs data set:
 
 * The size of training set is 34799 images
-* The size of the validation set is ?
+* The size of the validation set is 4410
 * The size of test set is 12630 images
 * The shape of a traffic sign image is 32x32
 * The number of unique classes/labels in the data set is 43
@@ -58,35 +58,31 @@ Here are some original examples, their grayscale, and their optimized version, r
 ![histogram](doc/orig-gray-hist.PNG)
 
 Some of the traffic signs inherit symmetry. For example, the "Vorfahrt beachten"-sign is horizontally symmetric
+
 ![histogram](doc/h-sym.PNG)
 
 The "30 speed limit"-sign is vertically symmetric
+
 ![histogram](doc/v-sym.PNG)
 
 Class 32 is symmetric when flipped horizontally and subsequently vertically.
+
 ![histogram](doc/hv-sym.PNG)
 
 Moreover, class 34 becomes class 33 when flipped horizontally (and vice versa).
+
 ![histogram](doc/cross-sym.PNG)
 
+This means that by simple flipping we can generate additional data for free. Doing so increases the training set size from 34'799 images to 56'368 images.
 
-This means that by simple flipping we can generate additional data for free. Doing so increases the training set size from 34799 images to ???? images.
+But we can do even better. The provided images are real-life images which means they are all taken from slightly different angles which results in slight squeezing, shifts, and rotating when compared to each other. We can use this to generate additional data by slightly rotating and squeezing the images ourselves. I experimented with several augmentations but eventually settled with just random rotations and random warping. The angle of rotation and the borders of the subpicture which is warped are drawn from random uniform variables.
 
-But we can do even better. The provided images are "typical" which means they are all taken from slightly different angles which results in slight squeezing, shifts, and rotating when compared to each other. We can use this to generate additional data by slightly rotating and squeezing the images ourselves.
+Here are some examples, the first image is the original and the following are augmented
 
+![histogram](doc/warp1.PNG)
+![histogram](doc/warp2.PNG)
 
-
-
-
-I decided to generate additional data because ... 
-
-To add more data to the the data set, I used the following techniques because ... 
-
-Here is an example of an original image and an augmented image:
-
-![alt text][image3]
-
-The difference between the original data set and the augmented data set is the following ... 
+I decided to add for each image 20 augmented versions so that the total number of images in the training set now is 1'183'728
 
 
 ####2. Describe what your final model architecture looks like including model type, layers, layer sizes, connectivity, etc.) Consider including a diagram and/or table describing the final model.
@@ -95,11 +91,13 @@ My final model consisted of the following layers:
 
 | Layer         		|     Description	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| Input         		| 32x32x3 RGB image   							| 
-| Convolution 3x3     	| 1x1 stride, same padding, outputs 32x32x64 	|
+| Input         		| 32x32x1 Gray image   							| 
+| Convolution 5x5     	| 1x1 stride, valid padding, outputs 28x28x6 	|
 | RELU					|												|
-| Max pooling	      	| 2x2 stride,  outputs 16x16x64 				|
-| Convolution 3x3	    | etc.      									|
+| Max pooling	      	| 2x2 stride,  outputs 14x14x6   				|
+| Convolution 5x5     	| 1x1 stride, valid padding, outputs 10x10x16 	|
+| RELU					|												|
+| Flatten			    | outputs 400x1									|
 | Fully connected		| etc.        									|
 | Softmax				| etc.        									|
 |						|												|
