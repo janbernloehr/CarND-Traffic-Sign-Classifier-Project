@@ -1,11 +1,5 @@
 #**Traffic Sign Recognition** 
 
-##Writeup Template
-
-###You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
----
-
 **Build a Traffic Sign Recognition Project**
 
 The goals / steps of this project are the following:
@@ -16,18 +10,6 @@ The goals / steps of this project are the following:
 * Analyze the softmax probabilities of the new images
 * Summarize the results with a written report
 
-
-[//]: # (Image References)
-
-[image1]: ./examples/visualization.jpg "Visualization"
-[image2]: ./examples/grayscale.jpg "Grayscaling"
-[image3]: ./examples/random_noise.jpg "Random Noise"
-[image4]: ./examples/placeholder.png "Traffic Sign 1"
-[image5]: ./examples/placeholder.png "Traffic Sign 2"
-[image6]: ./examples/placeholder.png "Traffic Sign 3"
-[image7]: ./examples/placeholder.png "Traffic Sign 4"
-[image8]: ./examples/placeholder.png "Traffic Sign 5"
-
 ## Rubric Points
 ###Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/481/view) individually and describe how I addressed each point in my implementation.  
 
@@ -36,38 +18,65 @@ The goals / steps of this project are the following:
 
 ####1. Provide a Writeup / README that includes all the rubric points and how you addressed each one. You can submit your writeup as markdown or pdf. You can use this template as a guide for writing the report. The submission includes the project code.
 
-You're reading it! and here is a link to my [project code](https://github.com/udacity/CarND-Traffic-Sign-Classifier-Project/blob/master/Traffic_Sign_Classifier.ipynb)
+You're reading it! and here is a link to my [project code](https://github.com/janbernloehr/CarND-Traffic-Sign-Classifier-Project/blob/master/Traffic_Sign_Classifier.ipynb)
 
 ###Data Set Summary & Exploration
 
 ####1. Provide a basic summary of the data set. In the code, the analysis should be done using python, numpy and/or pandas methods rather than hardcoding results manually.
 
-I used the pandas library to calculate summary statistics of the traffic
+I used plain to calculate summary statistics of the traffic
 signs data set:
 
-* The size of training set is ?
+* The size of training set is 34799 images
 * The size of the validation set is ?
-* The size of test set is ?
-* The shape of a traffic sign image is ?
-* The number of unique classes/labels in the data set is ?
+* The size of test set is 12630 images
+* The shape of a traffic sign image is 32x32
+* The number of unique classes/labels in the data set is 43
 
 ####2. Include an exploratory visualization of the dataset.
 
-Here is an exploratory visualization of the data set. It is a bar chart showing how the data ...
+Here are 27 randomly chosen images from the training set.
 
-![alt text][image1]
+![27 random images](doc/27-random.PNG)
+
+When one looks at the distribution of the images across labels, one sees that some classes are quite under represented. Here is a bar chart with the classes on the x-axis and the number of corresponding samples on the y-axis (created with matplotlib)
+
+![histogram](doc/hist.PNG)
 
 ###Design and Test a Model Architecture
 
 ####1. Describe how you preprocessed the image data. What techniques were chosen and why did you choose these techniques? Consider including images showing the output of each preprocessing technique. Pre-processing refers to techniques such as converting to grayscale, normalization, etc. (OPTIONAL: As described in the "Stand Out Suggestions" part of the rubric, if you generated additional data for training, describe why you decided to generate additional data, how you generated the data, and provide example images of the additional data. Then describe the characteristics of the augmented training set like number of images in the set, number of images for each class, etc.)
 
-As a first step, I decided to convert the images to grayscale because ...
+As a first step, I decided to convert the images to grayscale because using color channels does not seem to add much to the network acuracy but increases training time.
 
-Here is an example of a traffic sign image before and after grayscaling.
+I used the `rgb2gray` method from skimage to convert to grayscale which at the same time converts the image to float and hence normalizes it.
 
-![alt text][image2]
+Looking at the images shows that some of them are very dark and/or have low contrast. I first used a simple gamma correction but eventually settled with the `equalize_adapthist` from skimage which perfoms a local, contrast limited histogram equalization.
 
-As a last step, I normalized the image data because ...
+Here are some original examples, their grayscale, and their optimized version, respectively.
+
+![histogram](doc/orig-gray-hist.PNG)
+
+Some of the traffic signs inherit symmetry. For example, the "Vorfahrt beachten"-sign is horizontally symmetric
+![histogram](doc/h-sym.PNG)
+
+The "30 speed limit"-sign is vertically symmetric
+![histogram](doc/v-sym.PNG)
+
+Class 32 is symmetric when flipped horizontally and subsequently vertically.
+![histogram](doc/hv-sym.PNG)
+
+Moreover, class 34 becomes class 33 when flipped horizontally (and vice versa).
+![histogram](doc/cross-sym.PNG)
+
+
+This means that by simple flipping we can generate additional data for free. Doing so increases the training set size from 34799 images to ???? images.
+
+But we can do even better. The provided images are "typical" which means they are all taken from slightly different angles which results in slight squeezing, shifts, and rotating when compared to each other. We can use this to generate additional data by slightly rotating and squeezing the images ourselves.
+
+
+
+
 
 I decided to generate additional data because ... 
 
