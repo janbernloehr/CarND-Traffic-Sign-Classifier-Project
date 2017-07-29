@@ -57,7 +57,7 @@ Here are some original examples, their grayscale, and their optimized version, r
 
 ![histogram](doc/orig-gray-hist.PNG)
 
-Some of the traffic signs inherit symmetry. For example, the "Yield"-sign is horizontally symmetric
+Some of the traffic signs inherit symmetry - see cell 5 in my jpyter notebook for a detailed analysis of the symmetries. For example, the "Yield"-sign is horizontally symmetric
 
 ![histogram](doc/h-sym.PNG)
 
@@ -73,7 +73,7 @@ Moreover, "Turn left ahead" becomes "Turn right ahead" when flipped horizontally
 
 ![histogram](doc/cross-sym.PNG)
 
-This means that by simple flipping we can generate additional data for free. Doing so increases the training set size from 34'799 images to 56'368 images.
+This means that by simple flipping we can generate additional data for training. Doing so increases the training set size from 34'799 images to 56'368 images.
 
 But we can do even better. The provided images are real-life images which means they are all taken from slightly different angles which results in slight squeezing, shifts, and rotating when compared to each other. We can use this to generate additional data by slightly rotating and squeezing the images ourselves. I experimented with several augmentations but eventually settled with just random rotations and random warping. The angle of rotation and the borders of the subpicture which is warped are drawn from random uniform variables.
 
@@ -82,7 +82,9 @@ Here are some examples, the first image is the original and the following are au
 ![histogram](doc/warp1.PNG)
 ![histogram](doc/warp2.PNG)
 
-I decided to add for each image 20 augmented versions so that the total number of images in the training set now is 1'183'728.
+I decided to add for each image 20 augmented versions so that the total number of images in the training set now is 1'183'728. Here is the distribution of the extended training set.
+
+![histogram](doc/hist-after.PNG)
 
 Finally, the labels were one-hot encoded.
 
@@ -103,13 +105,13 @@ My final model consisted of five layers, three convolutions (followed by max poo
 | RELU					|												|
 | Max pooling	      	| 2x2 stride,  outputs 4x4x128   				|
 | Flatten			    | outputs 2'048									|
-| Fully connected		| outputs 1024        							|
+| Fully connected		| outputs 1'024        							|
 | RELU					|												|
 | Output        		| outputs 43        							|
 
 #### 3. Describe how you trained your model. The discussion can include the type of optimizer, the batch size, number of epochs and any hyperparameters such as learning rate.
 
-I sticked with Adam's optimizer from our LeNet implementation, a batch size of 128, and trained for 100 epochs. Also the learning rate of `0.001` yielded the best results for me.
+I sticked with Adam's optimizer from our LeNet implementation and a batch size of 128. The model was trained for 100 epochs but seemed to stop improving after ~30 epochs. Also the learning rate of `0.001` yielded the best results for me.
 
 To avoid overfitting, I used dropout on each of the layers. Fully connected layers seem to benefit more than convolutional layers thus I chose the following keep probabilities
 
@@ -120,15 +122,18 @@ To avoid overfitting, I used dropout on each of the layers. Fully connected laye
 | Conv3         		| 0.7   							            | 
 | FC             		| 0.5   							            |
 
-Still, my first epochs resulted in an accuracy below 0.9 thus I chose to add a bit of l2 regularization to speedup training. After trying `lambda = 0.001` and `lambda = 0.0001` I went for the latter.
+Still, my first epochs resulted in low accuracy on both the training and the validation set and accuracy improved only very slow. To speed up training, I chose to add a bit of l2 regularization. After trying `lambda = 0.001` and `lambda = 0.0001`, I went for the latter.
 
+After training for 100 epochs, I decided to use the 31st epoch since it appeared to be the one where the model stopped improving. Subsequently, I reduced the learning rate and tried to improve on that model but without success. So I just sticked with the 31st epoch of the first training.
 
 #### 4. Describe the approach taken for finding a solution and getting the validation set accuracy to be at least 0.93. Include in the discussion the results on the training, validation and test sets and where in the code these were calculated. Your approach may have been an iterative process, in which case, outline the steps you took to get to the final solution and why you chose those steps. Perhaps your solution involved an already well known implementation or architecture. In this case, discuss why you think the architecture is suitable for the current problem.
 
-My final model results were: **TODO**
-* training set accuracy of ?
-* validation set accuracy of ? 
-* test set accuracy of ?
+My final model results were:
+* training set accuracy of 0.98
+* validation set accuracy of 0.958
+* test set accuracy of 0.969
+
+I am quite happy about the test set result which is even better than the validation result - dropout did an amazing job here.
 
 
 * What was the first architecture that was tried and why was it chosen?
@@ -137,54 +142,80 @@ I started with the LeNet implementation of the class because it was already ther
 
 * What were some problems with the initial architecture?
 
-The initial accuracy was 0.81. The result stopped improving after ~50 epochs. I noticed that choosing different variances when initializing made a big difference so I started to optimize this.
+The initial accuracy was 0.81 on the validation set and only a little bit better on the training set. The result stopped improving after ~50 epochs. I noticed that choosing different variances when initializing made a big difference, so I started to optimize this.
 
 * How was the architecture adjusted and why was it adjusted? Typical adjustments could include choosing a different model architecture, adding or taking away layers (pooling, dropout, convolution, etc), using an activation function or changing the activation function. One common justification for adjusting an architecture would be due to overfitting or underfitting. A high accuracy on the training set but low accuracy on the validation set indicates over fitting; a low accuracy on both sets indicates under fitting.
 
-Noticing that choosing different variances when initializing the weights made a big difference, I chose the xavier initializer for the weights which chooses the variance depending on the number of input nodes. Then I was thinking that LeNet was constructed to classify 10 different classes. My intuition told me that to classify 43 classes, I need more weights. I had several different architectures in my notes from deep learning classes and followed my intuition like this: I multiplied the depth of the output layers by 4 (43 instead of 10 classes) and then chose the closest power of two for the depth (because I am a mathematician and have a preference for powers of two). Also, I remember from one of my deep learning classes that having three convolutional layers could be beneficial for this kind of task thus I replaced the first fully connected layer with a convolutional layer. Finally, since I am always confused by valid padding, I chose same padding instead. Applying these changes gave me 0.91 validation accuracy after the first epoch and I just continued from there.
- 
+Noticing that choosing different variances when initializing the weights made a big difference, I chose the xavier initializer for the weights which chooses the variance depending on the number of input nodes. Still, the initial accuracy on the training set was around 0.8 so my network was underfitting - at least in early stages of training. Then I was thinking that LeNet was constructed to classify 10 different classes and to classify 43 classes, the net may just not be big enough in terms of total number of nodes. However, I wanted to stick with five layers because this is what seemed to have worked for this kind of task comparing different architectures I found on the arxiv - even tough there exist several very deep proven architectures to attack this kind of problem. In the end, I multiplied the depth of the output layers by 4 (because 43 instead of 10 classes) and then chose the closest power of two for the depth (because I am a mathematician and have a preference for powers of two). Further, I wanted to try having one more convolutional layer. Finally, since I am always confused by valid padding, I chose same padding instead. So each of my conv-relu-maxpool blocks reduced width and height by a factor of two and thus I chose to increase depth by a factor of two. After all these changes, the initial accuracy on the validation set was 0.91 and I decided to just continue from there.
 
 ### Test a Model on New Images
 
-####1. Choose five German traffic signs found on the web and provide them in the report. For each image, discuss what quality or qualities might be difficult to classify.
+#### 1. Choose five German traffic signs found on the web and provide them in the report. For each image, discuss what quality or qualities might be difficult to classify.
 
 Here are five German traffic signs that I found on the web:
 
-![Speed limit (70km/h)](newfrominternet/4.jpg) ![Right-of-way at the next intersection](newfrominternet/11.jpg) ![Priority road](newfrominternet/12.jpg) ![Road work](newfrominternet/25.jpg) ![Turn right ahead](newfrominternet/33.jpg)
+![new images from internet](doc/new-original.PNG)
 
-The first image might be difficult to classify because ...
+The first should be fairly easy to classify because the image is high quality and proper light - even tough the number of labels is very low for this class. The second should be already more challenging because there are several writings on the sign. The third is barely readable for me as a human. The third is two images in one - let's see what the net does here. The last one has very bad lighting.
 
-####2. Discuss the model's predictions on these new traffic signs and compare the results to predicting on the test set. At a minimum, discuss what the predictions were, the accuracy on these new predictions, and compare the accuracy to the accuracy on the test set (OPTIONAL: Discuss the results in more detail as described in the "Stand Out Suggestions" part of the rubric).
+This is how the images looked when preprocessed
+
+![new images preprocessed](doc/new-preprocessed.png)
+
+#### 2. Discuss the model's predictions on these new traffic signs and compare the results to predicting on the test set. At a minimum, discuss what the predictions were, the accuracy on these new predictions, and compare the accuracy to the accuracy on the test set (OPTIONAL: Discuss the results in more detail as described in the "Stand Out Suggestions" part of the rubric).
 
 Here are the results of the prediction:
 
 | Image			        |     Prediction	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| Stop Sign      		| Stop sign   									| 
-| U-turn     			| U-turn 										|
-| Yield					| Yield											|
-| 100 km/h	      		| Bumpy Road					 				|
-| Slippery Road			| Slippery Road      							|
+| Speed limit (20km/h)      		| Speed limit (20km/h)   									| 
+| Turn right ahead     			| Turn right ahead 										|
+| Speed limit (50km/h)					| Speed limit (50km/h)											|
+| Bumpy road	      		| Bumpy Road					 				|
+| Yield			| Yield      							|
 
 
-The model was able to correctly guess 4 of the 5 traffic signs, which gives an accuracy of 80%. This compares favorably to the accuracy on the test set of ...
+The model was able to correctly guess 5 of the 5 traffic signs, which gives an accuracy of 100%. This compares favorably to the accuracy on the test set of 96.6%
 
 ####3. Describe how certain the model is when predicting on each of the five new images by looking at the softmax probabilities for each prediction. Provide the top 5 softmax probabilities for each image along with the sign type of each probability. (OPTIONAL: as described in the "Stand Out Suggestions" part of the rubric, visualizations can also be provided such as bar charts)
 
-The code for making predictions on my final model is located in the 11th cell of the Ipython notebook.
+For the first image, the model is quite sure that this is a 20 km/h sign (probability .999).
 
-For the first image, the model is relatively sure that this is a stop sign (probability of 0.6), and the image does contain a stop sign. The top five soft max probabilities were
+![new images preprocessed](doc/top5-softmax-1.png)
+
+Precision and recall for this class are both 1.0
+
+For the second image, the model is less sure which may be due to the writing on the sign 
 
 | Probability         	|     Prediction	        					| 
 |:---------------------:|:---------------------------------------------:| 
-| .60         			| Stop sign   									| 
-| .20     				| U-turn 										|
-| .05					| Yield											|
-| .04	      			| Bumpy Road					 				|
-| .01				    | Slippery Road      							|
+| .57         			| Turn right ahead   									|
+| .28     				| Priority road 										|
+| .10					| Keep left											|
+| .01	      			| Keep right					 				|
+| .01				    | Roundabout mandatory      							|
 
+![new images preprocessed](doc/top5-softmax-2.png)
 
-For the second image ... 
+Precision for this class is 0.972 and recall is 0.99
+
+For the third image, the model is quite sure that this is a 50 km/h sign (probability .998).
+
+![new images preprocessed](doc/top5-softmax-3.png)
+
+Precision for this class is 0.991 and recall is 0.992
+
+For the fourth image, the model is quite sure that this is a bumpy road sign (probability .997).
+
+![new images preprocessed](doc/top5-softmax-4.png)
+
+Precision for this class is 0.958 and recall is 0.958
+
+For the fifth image, the model is quite sure that this is a Yield sign (probability .999).
+
+![new images preprocessed](doc/top5-softmax-5.png)
+
+Precision for this class is 0.98 and recall is 0.997
 
 ### (Optional) Visualizing the Neural Network (See Step 4 of the Ipython notebook for more details)
 ####1. Discuss the visual output of your trained network's feature maps. What characteristics did the neural network use to make classifications?
